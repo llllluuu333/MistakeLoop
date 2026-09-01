@@ -41,4 +41,14 @@ final class KnowledgeItem {
 
     var subject: Subject { Subject(rawValue: subjectRaw) ?? .math2 }
     var type: EntryType { EntryType(rawValue: typeRaw) ?? .concept }
+
+    var cardType: CardType {
+        switch type {
+        case .concept: return .concept
+        case .formula: return .formula
+        case .method: return .method
+        case .code: return .code
+        case .modelCase: return .method
+        }
+    }
 }

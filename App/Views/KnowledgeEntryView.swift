@@ -1,8 +1,11 @@
 import SwiftUI
 import SwiftData
+import UIKit
 
 struct KnowledgeEntryView: View {
     let item: KnowledgeItem
+    @Environment(\.modelContext) private var context
+    @State private var showNewMistake = false
 
     var body: some View {
         ScrollView {
@@ -52,7 +55,17 @@ struct KnowledgeEntryView: View {
                 if !item.code.isEmpty {
                     GlassCard {
                         VStack(alignment: .leading, spacing: 10) {
-                            SectionTitle(title: "代码示例")
+                            HStack {
+                                SectionTitle(title: "代码示例")
+                                Spacer()
+                                Button("复制") {
+                                    UIPasteboard.general.string = item.code
+                                    UINotificationFeedbackGenerator().notificationOccurred(.success)
+                                }
+                                .font(.footnote.weight(.semibold))
+                                .buttonStyle(.bordered)
+                                .tint(Theme.primary)
+                            }
                             ScrollView(.horizontal, showsIndicators: false) {
                                 Text(item.code)
                                     .font(.system(.body, design: .monospaced))
@@ -72,12 +85,57 @@ struct KnowledgeEntryView: View {
                         Chip(text: "错题 \(item.mistakes.count) 道", foreground: Theme.red, background: Theme.redLight)
                     }
                 }
+
+                GlassCard {
+                    VStack(alignment: .leading, spacing: 12) {
+                        SectionTitle(title: "沉淀")
+                        HStack(spacing: 12) {
+                            Button {
+                                createCard()
+                            } label: {
+                                Label("生成复习卡", systemImage: "rectangle.stack.badge.plus")
+                            }
+                            .buttonStyle(.bordered)
+                            .tint(Theme.primary)
+
+                            Button {
+                                showNewMistake = true
+                            } label: {
+                                Label("记一道错题", systemImage: "exclamationmark.bubble")
+                            }
+                            .buttonStyle(.bordered)
+                            .tint(Theme.red)
+                        }
+                    }
+                }
             }
             .padding()
         }
         .background(Theme.background)
         .navigationTitle(item.title)
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showNewMistake) {
+            NavigationStack {
+                NewMistakeView(
+                    initialSubject: item.subject,
+                    initialKnowledgePoint: item.title,
+                    initialKnowledge: item
+                )
+            }
+        }
+    }
+
+    private func createCard() {
+        let card = CardItem(
+            subject: item.subject,
+            type: item.cardType,
+            front: item.title,
+            back: item.overview.isEmpty ? (item.formula.isEmpty ? item.steps : item.formula) : item.overview,
+            knowledge: item,
+            nextReviewDate: .now
+        )
+        context.insert(card)
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
     }
 
     private func shortDate(_ date: Date) -> String {

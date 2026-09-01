@@ -9,6 +9,7 @@ struct TodayView: View {
 
     @State private var showNewMistake = false
     @State private var showReview = false
+    @State private var showSettings = false
 
     private var dueCards: [CardItem] { cards.filter { $0.isDue } }
     private var dueMistakes: [MistakeItem] { mistakes.filter { $0.isDue } }
@@ -45,9 +46,23 @@ struct TodayView: View {
         .background(Theme.background)
         .navigationTitle("今天")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showSettings = true
+                } label: {
+                    Image(systemName: "gearshape")
+                }
+            }
+        }
         .sheet(isPresented: $showNewMistake) {
             NavigationStack {
                 NewMistakeView()
+            }
+        }
+        .sheet(isPresented: $showSettings) {
+            NavigationStack {
+                SettingsView()
             }
         }
         .navigationDestination(isPresented: $showReview) {
