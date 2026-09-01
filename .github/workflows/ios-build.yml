@@ -35,14 +35,28 @@ jobs:
             -project MistakeLoop.xcodeproj \
             -scheme MistakeLoop \
             -configuration Debug \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath DerivedData \
             CODE_SIGNING_ALLOWED=NO \
             build
 
-      - name: Boot simulator
+      - name: Prepare simulator
         run: |
-          xcrun simctl boot "iPhone 16" || true
+          set -e
+          DEVICE_NAME="iPhone 16"
+          if ! xcrun simctl list devices available | grep -q "$DEVICE_NAME"; then
+            DEVTYPE=$(xcrun simctl list devicetypes | awk '/iPhone 16 \(/ {print $NF}' | tr -d '()' | head -1)
+            RUNTIME=$(xcrun simctl list runtimes available | grep -o 'com.apple.CoreSimulator.SimRuntime.iOS-[0-9.-]*' | head -1)
+            if [ -z "$DEVTYPE" ] || [ -z "$RUNTIME" ]; then
+              echo "No device type or runtime available:"
+              xcrun simctl list devicetypes
+              xcrun simctl list runtimes
+              exit 1
+            fi
+            echo "Creating $DEVICE_NAME with $DEVTYPE / $RUNTIME"
+            xcrun simctl create "$DEVICE_NAME" "$DEVTYPE" "$RUNTIME"
+          fi
+          xcrun simctl boot "$DEVICE_NAME" || true
           xcrun simctl bootstatus "iPhone 16" -b
 
       - name: Install and launch app
