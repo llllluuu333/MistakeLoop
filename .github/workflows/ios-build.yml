@@ -21,3 +21,49 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO \
             build
+
+  run-on-simulator:
+    runs-on: macos-15
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build for simulator
+        run: |
+          xcodebuild \
+            -project MistakeLoop.xcodeproj \
+            -scheme MistakeLoop \
+            -configuration Debug \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -derivedDataPath DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Boot simulator
+        run: |
+          xcrun simctl boot "iPhone 16" || true
+          xcrun simctl bootstatus "iPhone 16" -b
+
+      - name: Install and launch app
+        run: |
+          APP_PATH=$(find DerivedData/Build/Products -name "MistakeLoop.app" -type d | head -1)
+          echo "App path: $APP_PATH"
+          xcrun simctl install booted "$APP_PATH"
+          xcrun simctl launch booted com.zzc.mistakeloop
+          sleep 8
+
+      - name: Verify app is running
+        run: |
+          xcrun simctl spawn booted launchctl list | grep -q "com.zzc.mistakeloop"
+          echo "App is running on the simulator."
+
+      - name: Capture screenshot
+        run: |
+          xcrun simctl io booted screenshot screenshot.png
+
+      - name: Upload screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulator-screenshot
+          path: screenshot.png
