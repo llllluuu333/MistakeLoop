@@ -5,7 +5,8 @@ struct ModelLibraryView: View {
     @Query private var items: [KnowledgeItem]
 
     init() {
-        let predicate = #Predicate<KnowledgeItem> { $0.typeRaw == EntryType.modelCase.rawValue }
+        let modelCaseRaw = EntryType.modelCase.rawValue
+        let predicate = #Predicate<KnowledgeItem> { $0.typeRaw == modelCaseRaw }
         _items = Query(filter: predicate, sort: \KnowledgeItem.updatedAt, order: .reverse)
     }
 
