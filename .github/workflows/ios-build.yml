@@ -81,3 +81,33 @@ jobs:
         with:
           name: simulator-screenshot
           path: screenshot.png
+
+  build-ipa:
+    runs-on: macos-15
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build unsigned device app
+        run: |
+          xcodebuild \
+            -project MistakeLoop.xcodeproj \
+            -scheme MistakeLoop \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Package IPA
+        run: |
+          mkdir -p Payload
+          cp -R DerivedData/Build/Products/Release-iphoneos/MistakeLoop.app Payload/
+          zip -r MistakeLoop.ipa Payload
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: MistakeLoop-ipa
+          path: MistakeLoop.ipa
